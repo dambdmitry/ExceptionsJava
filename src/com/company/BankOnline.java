@@ -11,47 +11,45 @@ public class BankOnline {
         }
 
         String cardNumber = number.replaceAll(" ", "");
-        if(!validateCardNumber(cardNumber)) {
-            throw new InvalidCardNumberException("Номер карты должен состоять из 16 цифр");
-        }
-        else if(isBlockedCard(cardNumber)) {
-            throw new BlockedCardException("Перевод на заблокированную карту невозможен");
-        }
-        else if(!validateTransferAmount(money)) {
-            throw new InvalidTransferAmount("Недопустимая сумма перевода");
-        }
+
+        // Проверка корректности введеных данных.
+        validateCardNumber(cardNumber);
+        validateTransferAmount(money);
 
         System.out.println("Перевод выполнен");
     }
 
     private boolean isNumeric(String str){
         try{
-            long l = Long.parseLong(str);
+            Long.parseLong(str);
             return true;
         }catch (NumberFormatException e){
             return false;
         }
     }
 
-    private boolean isBlockedCard(String cardNumber){
-        try{
-            Scanner in = new Scanner(new File("BlockedCards.txt"));
+    private void notBlockedCard(String cardNumber) throws BankOnlineException{
+        try(Scanner in = new Scanner(new File("BlockedCards.txt"));){
             while (in.hasNextLine())
                 if(cardNumber.equals(in.nextLine())){
-                    return true;
+                    throw new BlockedCardException("Перевод на заблокированную карту невозможен");
                 }
         }catch (FileNotFoundException e){
             System.out.println("Потерян файл 'BlockedCards.txt'");
         }
-        return false;
     }
-
+    
     //Считается что в параматре cardNumber все пробелы удалены.
-    private boolean validateCardNumber(String cardNumber){
-        return cardNumber.length() == 16 && isNumeric(cardNumber);
+    private void validateCardNumber(String cardNumber) throws BankOnlineException {
+        if(cardNumber.length() != 16 || !isNumeric(cardNumber)){
+            throw new InvalidCardNumberException("Номер карты должен состоять из 16 цифр");
+        }
+        notBlockedCard(cardNumber);
     }
 
-    private boolean validateTransferAmount(double money){
-        return 0 <= money && money <= 50000;
+    private void validateTransferAmount(double money) throws BankOnlineException{
+        if(money < 0 || 50000 < money){
+            throw new InvalidTransferAmountException("Недопустимая сумма перевода");
+        }
     }
 }
